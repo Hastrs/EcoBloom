@@ -1,31 +1,108 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Activate scroll effects
+    const menuToggleBtn = document.getElementById('menu-toggle');
+    const mainNav = document.getElementById('main-nav');
+    if (menuToggleBtn && mainNav) {
+      menuToggleBtn.addEventListener('click', () => {
+        mainNav.classList.toggle('open');
+      });
+    }
+    
+  
     const fadeElements = document.querySelectorAll('.fadeInUp');
     const stickyCta = document.querySelector('.sticky-cta');
     
     const fadeInElements = () => {
-        fadeElements.forEach(element => {
-            const elementTop = element.getBoundingClientRect().top;
-            const windowHeight = window.innerHeight;
-            
-            if (elementTop < windowHeight * 0.85) {
-                element.classList.add('active');
-            }
-        });
-        
-        // Show order button when scrolling past the Hero section
-        const heroHeight = document.querySelector('.hero').offsetHeight;
-        if (window.scrollY > heroHeight / 2) {
-            stickyCta.classList.add('visible');
-        } else {
-            stickyCta.classList.remove('visible');
+      fadeElements.forEach(element => {
+        const elementTop = element.getBoundingClientRect().top;
+        const windowHeight = window.innerHeight;
+        if (elementTop < windowHeight * 0.85) {
+          element.classList.add('active');
         }
+      });
+      
+      const hero = document.querySelector('.hero');
+      if (hero) {
+        const heroHeight = hero.offsetHeight;
+        if (window.scrollY > heroHeight / 2) {
+          stickyCta.classList.add('visible');
+        } else {
+          stickyCta.classList.remove('visible');
+        }
+      }
     };
+    
+  
     
     fadeInElements();
     window.addEventListener('scroll', fadeInElements);
     
-    // Enable FAQ section expansion
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    
+    function updateCartCount() {
+        document.getElementById('cart-count').textContent = cart.length;
+    }
+    
+    function renderCartItems() {
+        const cartContainer = document.getElementById('cart-items');
+        if (!cartContainer) return;
+    
+        cartContainer.innerHTML = '';
+        cart.forEach((item, index) => {
+            const cartItem = document.createElement('div');
+            cartItem.classList.add('cart-item');
+            cartItem.innerHTML = `
+                <img src="${item.image}" alt="${item.name}">
+                <div class="item-info">
+                    <h3>${item.name}</h3>
+                    <p>${item.price}</p>
+                </div>
+                <button class="remove-btn" data-index="${index}">Remove</button>
+            `;
+            cartContainer.appendChild(cartItem);
+        });
+    
+        document.querySelectorAll('.remove-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = this.getAttribute('data-index');
+                cart.splice(index, 1);
+                localStorage.setItem('cart', JSON.stringify(cart));
+                renderCartItems();
+                updateCartCount();
+            });
+        });
+    }
+    
+    document.querySelectorAll('.btn').forEach(button => {
+        button.addEventListener('click', function(event) {
+            if (event.target.textContent.includes('Add to Cart')) {
+                const productCard = event.target.closest('.product-card');
+                const productName = productCard.querySelector('h3').textContent;
+                const productPrice = productCard.querySelector('.product-price').textContent;
+                const productImage = productCard.querySelector('img').src;
+    
+                cart.push({ name: productName, price: productPrice, image: productImage });
+                localStorage.setItem('cart', JSON.stringify(cart));
+                alert('Product added to cart!');
+                updateCartCount();
+            }
+        });
+    });
+    
+    if (document.getElementById('cart-items')) {
+        renderCartItems();
+    }
+    
+    if (document.getElementById('clear-cart')) {
+        document.getElementById('clear-cart').addEventListener('click', function() {
+            cart = [];
+            localStorage.setItem('cart', JSON.stringify(cart));
+            renderCartItems();
+            updateCartCount();
+        });
+    }
+    
+    updateCartCount();
+    
     const faqItems = document.querySelectorAll('.faq-item');
     faqItems.forEach(item => {
         const question = item.querySelector('.faq-question');
@@ -36,7 +113,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Initialize animated background in Hero section
     const heroCanvas = document.getElementById('heroCanvas');
     const heroScene = new THREE.Scene();
     const heroCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -46,11 +122,9 @@ document.addEventListener('DOMContentLoaded', function() {
         alpha: true,
         antialias: true
     });
-    
     heroRenderer.setSize(window.innerWidth, window.innerHeight);
     heroRenderer.setPixelRatio(window.devicePixelRatio);
     
-    // Create floating leaves for background
     const leaves = [];
     const leafGeometry = new THREE.CircleGeometry(0.5, 5);
     const leafMaterial = new THREE.MeshBasicMaterial({ color: 0x8BC34A, transparent: true, opacity: 0.7 });
@@ -76,16 +150,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     heroCamera.position.z = 15;
     
-    // Update camera on window resize
+    
     function onWindowResize() {
         heroCamera.aspect = window.innerWidth / window.innerHeight;
         heroCamera.updateProjectionMatrix();
         heroRenderer.setSize(window.innerWidth, window.innerHeight);
     }
-    
     window.addEventListener('resize', onWindowResize);
     
-    // Activate background animation
+    
     function animate() {
         requestAnimationFrame(animate);
         
@@ -102,13 +175,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         heroRenderer.render(heroScene, heroCamera);
     }
-    
     animate();
     
-    // Register GSAP plugins
     gsap.registerPlugin(ScrollTrigger);
-    
-    // Apply scroll-triggered animations
     ScrollTrigger.batch(".fadeInUp", {
         onEnter: (elements) => {
             gsap.to(elements, { opacity: 1, y: 0, stagger: 0.15, duration: 0.8, ease: "power3.out" });
